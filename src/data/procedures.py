@@ -80,7 +80,7 @@ class ProcedureDelS1S2(Procedure):
         self.total_bnabs = []
         self.num_reps = 100
         self.trajectories = trajectories
-        self.n_initial = [20.0, 5.0, 0.0, 0.0, 0.0, 5.0, 20.0]
+        self.n_initial = [25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0]
         self.p_ini = self.n_initial / np.sum(self.n_initial)
 
     def run_prime(self):

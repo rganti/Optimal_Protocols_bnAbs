@@ -59,7 +59,7 @@ if __name__ == "__main__":
     else:
         home = os.getcwd()
         sigma_1_range = np.logspace(1.0, -1.0, num=15)
-        sigma_1_range = [sigma_1_range[4], sigma_1_range[6]]
+        # sigma_1_range = [sigma_1_range[4], sigma_1_range[6]]
 
         for sigma1 in sigma_1_range:
             make_and_cd("Sigma_{0}".format(round(sigma1, 2)))
