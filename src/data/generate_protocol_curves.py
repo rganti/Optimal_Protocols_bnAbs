@@ -7,8 +7,6 @@ import socket
 
 import numpy as np
 
-print(str(os.path.dirname(__file__)))
-
 from src.data.procedures import ProcedureIndividualRestart
 from src.general.directory_handling import make_and_cd
 from src.general.queuing import QsubHeader, SlurmHeader, run_sbatch, run_qsub
@@ -54,7 +52,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.sigma1:
-        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1)
+        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1, fraction=0.95)
         protocol.run_sequential()
     else:
         home = os.getcwd()
