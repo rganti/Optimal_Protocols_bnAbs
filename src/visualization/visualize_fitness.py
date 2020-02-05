@@ -59,8 +59,8 @@ class InjectionKlDistance(Injection):
 
 class ProcessProtocolData(object):
 
-    def __init__(self, path, num_gcs=100.0):
-        self.sigma_1_range = np.sort(np.logspace(1.0, -1.0, num=15))[::-1]
+    def __init__(self, path, sigma_1_range, num_gcs=100.0):
+        self.sigma_1_range = sigma_1_range # np.sort(np.logspace(1.0, -1.0, num=15))[::-1]
         self.fitness_array = []
         self.kl1_array = []
         self.kl2_matrix = []

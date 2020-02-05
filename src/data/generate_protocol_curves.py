@@ -52,11 +52,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.sigma1:
-        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1, fraction=0.95)
+        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1, fraction=0.92)
         protocol.run_sequential()
     else:
         home = os.getcwd()
-        sigma_1_range = np.logspace(1.0, -1.0, num=15)
+        # sigma_1_range = np.logspace(1.0, -1.0, num=15
+        sigma_1_range = np.logspace(0.6, 0.0, num=20)
         # sigma_1_range = [sigma_1_range[4], sigma_1_range[6]]
 
         for sigma1 in sigma_1_range:
