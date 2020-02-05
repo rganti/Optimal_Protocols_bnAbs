@@ -1,5 +1,6 @@
 '''This script runs through all possible prime fitness values and all possible boost fitness values to generate
-the protocol curves showing bnabs/gc produced versus KL distance of p1 and f2'''
+the protocol curves showing bnabs/gc produced versus KL distance of p1 and f2.'''
+
 import argparse
 import os
 import socket
