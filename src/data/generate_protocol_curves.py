@@ -17,7 +17,7 @@ def set_python_script(q, sigma):
 
 
 class QsubProtocolCurves(object):
-    def __init__(self, sigma_1, simulation_time=30):
+    def __init__(self, sigma_1, simulation_time=10):
         self.sigma_1 = sigma_1
         self.header = QsubHeader(simulation_name="protocols_{0}".format(round(self.sigma_1, 2)),
                                  simulation_time=simulation_time)
@@ -30,7 +30,7 @@ class QsubProtocolCurves(object):
 
 
 class SlurmProtocolCurves(object):
-    def __init__(self, sigma_1, simulation_time=30, nodes=1, ppn=1):
+    def __init__(self, sigma_1, simulation_time=10, nodes=1, ppn=1):
         self.sigma_1 = sigma_1
         self.header = SlurmHeader(simulation_name="optimal_curves", simulation_time=simulation_time, nodes=nodes,
                                   ppn=ppn)
@@ -52,16 +52,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.sigma1:
-        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1, fraction=0.92)
+        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1)
         protocol.run_sequential()
+        # protocol.run_prime()
     else:
         home = os.getcwd()
-        # sigma_1_range = np.logspace(1.0, -1.0, num=15
-        sigma_1_range = np.logspace(0.6, 0.0, num=20)
-        # sigma_1_range = [sigma_1_range[4], sigma_1_range[6]]
+        sigma_1_range = np.logspace(1.0, -1.0, num=15)
+        # # sigma_1_range = np.logspace(0.6, 0.0, num=20)
+        # # sigma_1_range = [0.75, 0.8, 0.85, 0.9, 0.95]
+        # sigma_1_range = [1.7, 1.9, 2.0, 2.1, 2.2]
+        np.savetxt("sigma_1_range", sigma_1_range[::-1], fmt='%f')
 
         for sigma1 in sigma_1_range:
             make_and_cd("Sigma_{0}".format(round(sigma1, 2)))
+            # np.savetxt("fitness", gillespie_bnab.bnab.fitness.f, fmt='%f')
 
             if socket.gethostname() == "eofe4.mit.edu":
                 sbatch = SlurmProtocolCurves(sigma_1=sigma1)
