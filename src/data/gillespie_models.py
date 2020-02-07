@@ -6,7 +6,7 @@ from src.general.directory_handling import write_results
 
 
 class Model(object):
-    def __init__(self, p_ini, vnames, tmat, propensity):
+    def __init__(self, p_ini, vnames, tmat, propensity, n_stop=200):
         '''
          * vnames: list of strings
          * inits: list of initial values of variables
@@ -26,7 +26,7 @@ class Model(object):
         self.time = None
         self.series = None
         self.steps = 0
-        self.exit = 200
+        self.exit = n_stop
 
     def getStats(self):
         return self.time, self.series, self.steps
@@ -110,13 +110,13 @@ class Model(object):
 
 class ModelIndividualGC(Model):
 
-    def __init__(self, n_exit, p_ini, vnames, tmat, propensity):
-        Model.__init__(self, p_ini, vnames, tmat, propensity)
+    def __init__(self, n_exit, p_ini, vnames, tmat, propensity, n_stop=200):
+        Model.__init__(self, p_ini, vnames, tmat, propensity, n_stop=n_stop)
         self.n_exit = n_exit
 
     def sample_initial_population(self):
 
-        ini = np.zeros(7, dtype=int)
+        ini = np.zeros(len(self.n_exit), dtype=int)
 
         for i in range(self.ntot):
             print("n_i = " + str(self.n_exit))
