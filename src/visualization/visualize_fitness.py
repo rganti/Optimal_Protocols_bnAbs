@@ -42,8 +42,8 @@ class Injection(object):
 
 class InjectionKlDistance(Injection):
 
-    def __init__(self, p_ini, sigma=10.0):
-        Injection.__init__(self, sigma=sigma, num_odes=8)
+    def __init__(self, p_ini, sigma=10.0, num_odes=8):
+        Injection.__init__(self, sigma=sigma, num_odes=num_odes)
         self.p_ini = p_ini
 
     def compute_kl_distance(self):
@@ -70,7 +70,7 @@ class ProcessProtocolData(object):
         self.num_gcs = num_gcs
 
     def load_arrays(self):
-        for sigma1 in self.sigma_1_range[:-3]:
+        for sigma1 in self.sigma_1_range:
             print("Processing sigma_1 = {0}".format(sigma1))
 
             p0 = []
@@ -81,11 +81,12 @@ class ProcessProtocolData(object):
             total_bnabs.append(np.loadtxt(path + "total_bnabs"))
 
             p0_mean = np.mean(p0, axis=0)
-            kl1 = InjectionKlDistance(p0_mean, sigma=sigma1)
+            print("len(p0_mean) = " + str(len(p0_mean)))
+            kl1 = InjectionKlDistance(p0_mean, sigma=sigma1, num_odes=len(p0_mean) + 1)
             self.kl1_array.append(kl1.compute_kl_distance())
 
             self.fitness_array.append(kl1.f)
-            self.mean_bnab_array.append(np.array(total_bnabs) / self.num_gcs)
+            self.mean_bnab_array.append(np.array(total_bnabs)) #/ self.num_gcs)
 
             sigma2_range = np.loadtxt(path + "sigma2_range")
 
@@ -94,7 +95,7 @@ class ProcessProtocolData(object):
                 p1 = []
                 p1.append(np.loadtxt(path + "n_ave") / np.sum(np.loadtxt(path + "n_ave")))
                 p1_mean = np.mean(p1, axis=0)
-                kl2 = InjectionKlDistance(p1_mean, sigma=sigma2)
+                kl2 = InjectionKlDistance(p1_mean, sigma=sigma2, num_odes=len(p1_mean) + 1)
                 kl2_array.append(kl2.compute_kl_distance())
 
             self.kl2_matrix.append(kl2_array)
