@@ -34,10 +34,10 @@ class PostProcess(object):
 
 class BnabGcExit(object):
 
-    def __init__(self, n_exit=200):
+    def __init__(self, n_exit=200, num_odes=8):
         self.num_files = len([name for name in os.listdir(".") if "traj" in name])
 
-        self.num_odes = 8
+        self.num_odes = num_odes
         self.n_exit = n_exit
         self.start_index = 1
 
@@ -100,8 +100,8 @@ class BnabGcExit(object):
 
 class GillespieGCExit(BnabGcExit):
 
-    def __init__(self):
-        BnabGcExit.__init__(self)
+    def __init__(self, n_exit=200, num_odes=8):
+        BnabGcExit.__init__(self, n_exit=n_exit, num_odes=num_odes)
         self.num_files = len([name for name in os.listdir(".") if "hashed_traj" in name])
         self.start_index = 0
 
