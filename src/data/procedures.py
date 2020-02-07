@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from src.data.gillespie_models import ModelMFPTTrajectories, ModelIndividualGC
-from src.data.simulation_setup import Simulation, BnabGillespie
+from src.data.simulation_setup import Simulation, BnabGillespie, BnabFiniteSizeEffects
 from src.general.directory_handling import make_and_cd
 from src.data_process.simulation_post_process import print_info, GillespieGCExit
 from src.visualization.visualize_fitness import Injection
@@ -80,12 +80,15 @@ class ProcedureDelS1S2(Procedure):
         self.total_bnabs = []
         self.num_reps = 100
         self.trajectories = trajectories
-        self.n_initial = [25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0]
+        self.n_initial = [20.0, 5.0, 0.0, 0.0, 0.0, 5.0, 20.0]
+        # self.n_initial = [20.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 20.0]
         self.p_ini = self.n_initial / np.sum(self.n_initial)
+        self.n_stop = 200
 
     def run_prime(self):
         bnab_sequential = Simulation(self.p_ini, sigma=self.sigma[0], fraction=self.fraction,
-                                     death_rate=self.death_rate, trajectories=self.trajectories)
+                                     death_rate=self.death_rate, trajectories=self.trajectories,
+                                     n_stop=self.n_stop)
         bnab_sequential.run(reps=self.num_reps)
 
     def run_sequential(self):
@@ -103,8 +106,8 @@ class ProcedureDelS1S2(Procedure):
                 # Injection 2
                 self.next_injection(index=2, sigma=self.sigma[j])
 
-                n4 = np.loadtxt("n4")
-                self.total_bnabs.append(np.sum(n4))
+                n_bnabs = np.loadtxt("n{0}".format(int((len(self.p_ini) + 1)/2)))
+                self.total_bnabs.append(np.sum(n_bnabs))
 
                 # if self.build_tree:
                 #     tree_mp()
@@ -146,7 +149,15 @@ class ProcedureIndividualRestart(ProcedureDelS1S2):
 
             p_ini = n_i_exit[1:]/np.sum(n_i_exit[1:])
 
-            gillespie_bnab = BnabGillespie(p_ini, fraction=self.fraction, sigma=sigma, death_rate=self.death_rate)
+            if len(self.p_ini) > 7:
+                gillespie_bnab = BnabFiniteSizeEffects(p_ini, fraction=self.fraction, sigma=sigma,
+                                                            death_rate=self.death_rate,
+                                                            trajectories=self.trajectories, n_stop=self.n_stop)
+            else:
+                gillespie_bnab = BnabGillespie(p_ini, fraction=self.fraction, sigma=sigma,
+                                               death_rate=self.death_rate, trajectories=self.trajectories,
+                                               n_stop=self.n_stop)
+
             gillespie_bnab.define_tmat()
 
             if self.trajectories:
@@ -155,7 +166,8 @@ class ProcedureIndividualRestart(ProcedureDelS1S2):
 
             else:
                 M = ModelIndividualGC(n_exit=n_i_exit[1:], p_ini=p_ini, vnames=gillespie_bnab.vars,
-                                      tmat=gillespie_bnab.tmat, propensity=gillespie_bnab.prop)
+                                      tmat=gillespie_bnab.tmat, propensity=gillespie_bnab.prop,
+                                      n_stop=gillespie_bnab.n_stop)
 
             M.run(tmax=1000, reps=count)
             # tc.append(M.t_exit)
@@ -164,10 +176,11 @@ class ProcedureIndividualRestart(ProcedureDelS1S2):
 
         # np.savetxt("tc_gc_exit", tc, fmt='%f')
         np.savetxt("fitness", gillespie_bnab.bnab.fitness.f, fmt='%f')
-        np.savetxt("sigma", [sigma], fmt='%f')
-        np.savetxt("death_rate", [self.death_rate], fmt='%f')
-        np.savetxt("fraction", [self.fraction], fmt='%f')
+        np.savetxt("sigma", [gillespie_bnab.bnab.fitness.sigma], fmt='%f')
+        np.savetxt("death_rate", [gillespie_bnab.bnab.mu_i0], fmt='%f')
+        np.savetxt("mutation_rate", [gillespie_bnab.bnab.mu_ij], fmt='%f')
+        np.savetxt("fraction", [gillespie_bnab.bnab.fraction], fmt='%f')
 
         print("Starting post-processing...")
-        post_process = GillespieGCExit()
+        post_process = GillespieGCExit(n_exit=self.n_stop, num_odes=gillespie_bnab.len_ini)
         post_process.populate_pn(index=1)
