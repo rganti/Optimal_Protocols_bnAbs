@@ -1,3 +1,4 @@
+import datetime
 import os
 import subprocess
 
@@ -11,9 +12,9 @@ class BnabModel(object):
 
     def __init__(self, p_ini, fraction=3.0/4.0, sigma=0.3, death_rate=0.1, mutation_rate=0.1):
 
-        self.num_odes = 8
         self.ntot = 50
         self.p_ini = p_ini
+        self.num_odes = len(self.p_ini) + 1
 
         events = multinomial(self.ntot, p_ini)
         new = [i for i in events]
@@ -36,18 +37,18 @@ class BnabModel(object):
         record = []
         for i in range(0, self.num_odes):
             if i > 0:
-                if len(self.n_0) > 1:
-                    n_initial["N{0}".format(i)] = int(np.round(self.n_0[i - 1]))
-                else:
-                    mid = int(self.num_odes/2.0)
-                    if (i == mid - 2) or (i == mid + 2):
-                        n_initial["N{0}".format(i)] = int(0.6 * self.n_0[0])
-                    elif (i == mid - 1) or (i == mid + 1):
-                        n_initial["N{0}".format(i)] = int(0.2 * self.n_0[0])
-                    elif i == mid:
-                        n_initial["N{0}".format(i)] = 0  # int(0.2 * self.n_0[0])
-                    else:
-                        n_initial["N{0}".format(i)] = self.n_0[0]
+                # if len(self.n_0) > 1:
+                n_initial["N{0}".format(i)] = int(np.round(self.n_0[i - 1]))
+                # else:
+                #     mid = int(self.num_odes/2.0)
+                #     if (i == mid - 2) or (i == mid + 2):
+                #         n_initial["N{0}".format(i)] = int(0.6 * self.n_0[0])
+                #     elif (i == mid - 1) or (i == mid + 1):
+                #         n_initial["N{0}".format(i)] = int(0.2 * self.n_0[0])
+                #     elif i == mid:
+                #         n_initial["N{0}".format(i)] = 0  # int(0.2 * self.n_0[0])
+                #     else:
+                #         n_initial["N{0}".format(i)] = self.n_0[0]
             record.append("N{0}".format(i))
 
         return n_initial, record
@@ -58,7 +59,7 @@ class BnabModel(object):
         self.forward_rxns.append([reactant, product])
 
     def define_reactions(self):
-        mu_ij_dict = self.define_mu_ij_fixed()
+        mu_ij_dict = self.define_mu_ij()
 
         # Define death rates
         for i in range(1, self.num_odes):
@@ -75,14 +76,14 @@ class BnabModel(object):
             self.add_reaction(['N{0}'.format(i)], ['N{0}'.format(i), 'N{0}'.format(i)], mu_ij_dict['f{0}'.format(i)])
             self.add_reaction(['N{0}'.format(i)], ['N{0}'.format(i + 1)], mu_ij_dict['mu{0}{1}'.format(i, i + 1)])
 
-        # Define edge reaction 7
+        # Define edge reaction num_odes - 1
         i = self.num_odes - 1
         self.add_reaction(['N{0}'.format(i)], ['N{0}'.format(i), 'N{0}'.format(i)], mu_ij_dict['f{0}'.format(i)])
         self.add_reaction(['N{0}'.format(i)], ['N{0}'.format(i - 1)], mu_ij_dict['mu{0}{1}'.format(i, i - 1)])
 
         np.savetxt("fitness", self.fitness.f, fmt='%f')
 
-    def define_mu_ij_fixed(self):
+    def define_mu_ij(self):
         mu_ij_dict = {}
 
         mu_i0 = self.mu_i0
@@ -97,27 +98,13 @@ class BnabModel(object):
             deleterious_edge = fraction * mu_ij
             non_deleterious_edge = (1.0 - fraction) * mu_ij
 
-            if abs(dist) == 3:
+            if abs(dist) == (self.num_odes / 2) - 1:
                 if dist < 0:
-                    mu_ij_dict['mu{0}{1}'.format(i, i + 1)] = non_deleterious_edge # mu_ij
-                else:
-                    mu_ij_dict['mu{0}{1}'.format(i, i - 1)] = non_deleterious_edge
-
-            if abs(dist) == 2:
-                # deleterious_edge = fraction * mu_ij
-                # non_deleterious_edge = (1.0 - fraction) * mu_ij
-
-                if dist < 0:
-                    mu_ij_dict['mu{0}{1}'.format(i, i - 1)] = deleterious_edge
                     mu_ij_dict['mu{0}{1}'.format(i, i + 1)] = non_deleterious_edge
                 else:
                     mu_ij_dict['mu{0}{1}'.format(i, i - 1)] = non_deleterious_edge
-                    mu_ij_dict['mu{0}{1}'.format(i, i + 1)] = deleterious_edge
 
-            if abs(dist) == 1:
-                # deleterious_edge = fraction * mu_ij
-                # non_deleterious_edge = (1.0 - fraction) * mu_ij
-
+            if abs(dist) < (self.num_odes / 2) - 1:
                 if dist < 0:
                     mu_ij_dict['mu{0}{1}'.format(i, i - 1)] = deleterious_edge
                     mu_ij_dict['mu{0}{1}'.format(i, i + 1)] = non_deleterious_edge
@@ -130,6 +117,8 @@ class BnabModel(object):
                 mu_ij_dict['mu{0}{1}'.format(i, i + 1)] = 0.5 * mu_ij
 
         return mu_ij_dict
+
+
 
 
 class SharedCommands(object):
