@@ -7,7 +7,7 @@ import socket
 
 import numpy as np
 
-from src.data.procedures import ProcedureIndividualRestart
+from src.data.procedures import ProcedureDelS1S2
 from src.general.directory_handling import make_and_cd
 from src.general.queuing import QsubHeader, SlurmHeader, run_sbatch, run_qsub
 
@@ -51,16 +51,24 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    parameters = { #'n_initial': [20.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 20.0],
+                  'n_initial': [20.0, 5.0, 0.0, 0.0, 0.0, 5.0, 20.0],
+                  'sigma': args.sigma1,
+                  'death_rate': 0.05, 'fraction': 7.0 / 8.0, 'mutation_rate': 0.05, 'n_stop': 200}
+
     if args.sigma1:
-        protocol = ProcedureIndividualRestart(sigma_1=args.sigma1)
+        protocol = ProcedureDelS1S2(parameters)
         protocol.run_sequential()
         # protocol.run_prime()
     else:
+        make_and_cd("test_dr_{0}_muij_{1}_bins_{2}".format(parameters['death_rate'], parameters['mutation_rate'],
+                                                           len(parameters['n_initial'])))
         home = os.getcwd()
         sigma_1_range = np.logspace(1.0, -1.0, num=15)
         # # sigma_1_range = np.logspace(0.6, 0.0, num=20)
         # # sigma_1_range = [0.75, 0.8, 0.85, 0.9, 0.95]
-        # sigma_1_range = [1.7, 1.9, 2.0, 2.1, 2.2]
+
+        # sigma_1_range = [1.0, 1.2, 1.3, 1.7, 2.0]
         np.savetxt("sigma_1_range", sigma_1_range[::-1], fmt='%f')
 
         for sigma1 in sigma_1_range:
