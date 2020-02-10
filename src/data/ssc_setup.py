@@ -10,7 +10,7 @@ from src.visualization.visualize_fitness import Injection
 
 class BnabModel(object):
 
-    def __init__(self, p_ini, fraction=3.0/4.0, sigma=0.3, death_rate=0.1, mutation_rate=0.1):
+    def __init__(self, p_ini, parameters):
 
         self.ntot = 50
         self.p_ini = p_ini
@@ -21,12 +21,11 @@ class BnabModel(object):
 
         # Initial Distribution: new = [20.0, 5.0, 0.0, 0.0, 0.0, 5.0, 20.0]
         self.n_0 = new
+        self.fitness = Injection(sigma=parameters['sigma'], num_odes=self.num_odes)
 
-        self.fitness = Injection(sigma=sigma, num_odes=self.num_odes)
-
-        self.mu_i0 = death_rate
-        self.mu_ij = mutation_rate
-        self.fraction = fraction
+        self.mu_i0 = parameters['death_rate']
+        self.mu_ij = parameters['mutation_rate']
+        self.fraction = parameters['fraction']
         self.n_initial, self.record = self.set_shared()
 
         self.forward_rates = {}
@@ -119,8 +118,6 @@ class BnabModel(object):
         return mu_ij_dict
 
 
-
-
 class SharedCommands(object):
 
     def __init__(self, n_initial, record):
@@ -138,8 +135,8 @@ class SharedCommands(object):
 
 
 class SSCLaunch(object):
-    def __init__(self, p_ini, sigma=1.94, fraction=7.0/8.0, death_rate=0.1):
-        self.bnab = BnabModel(p_ini, fraction=fraction, sigma=sigma, death_rate=death_rate)
+    def __init__(self, p_ini, parameters):
+        self.bnab = BnabModel(p_ini, parameters)
 
         self.bnab.define_reactions()
 
