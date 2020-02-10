@@ -4,7 +4,8 @@ import time
 import numpy as np
 
 from src.data.gillespie_models import ModelMFPTTrajectories, ModelIndividualGC, Model
-from src.data.simulation_setup import BnabGillespie, BnabFiniteSizeEffects
+from src.data.simulation_setup import BnabGillespie, BnabFiniteSizeEffects9, BnabFiniteSizeEffects11, \
+    BnabFiniteSizeEffects15
 from src.data.ssc_setup import SSCLaunch
 from src.general.directory_handling import make_and_cd
 from src.data_process.simulation_post_process import print_info, GillespieGCExit
@@ -81,7 +82,11 @@ class Simulation(object):
         self.parameters = parameters
 
         if len(self.p_ini) == 9:
-            self.gillespie_bnab = BnabFiniteSizeEffects(p_ini, parameters)
+            self.gillespie_bnab = BnabFiniteSizeEffects9(p_ini, parameters)
+        elif len(self.p_ini) == 11:
+            self.gillespie_bnab = BnabFiniteSizeEffects11(p_ini, parameters)
+        elif len(self.p_ini) == 15:
+            self.gillespie_bnab = BnabFiniteSizeEffects15(p_ini, parameters)
         else:
             self.gillespie_bnab = BnabGillespie(p_ini, parameters)
 
@@ -187,15 +192,6 @@ class ProcedureDelS1S2(Procedure):
             p_ini = n_i_exit[1:]/np.sum(n_i_exit[1:])
 
             bnab_next_injection = Simulation(self.p_ini, self.parameters, trajectories=self.trajectories)
-
-            # if len(self.p_ini) > 7:
-            #     gillespie_bnab = BnabFiniteSizeEffects(p_ini, fraction=self.fraction, sigma=sigma,
-            #                                            death_rate=self.death_rate, n_stop=self.n_stop)
-            # else:
-            #     gillespie_bnab = BnabGillespie(p_ini, fraction=self.fraction, sigma=sigma, death_rate=self.death_rate,
-            #                                    n_stop=self.n_stop)
-            #
-            # gillespie_bnab.define_tmat()
 
             if self.trajectories:
                 M = ModelMFPTTrajectories(p_ini=p_ini, vnames=bnab_next_injection.gillespie_bnab.vars,
