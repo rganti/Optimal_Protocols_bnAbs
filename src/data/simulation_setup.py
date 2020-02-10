@@ -102,24 +102,9 @@ class BnabGillespie(object):
 
         self.define_upper_edge(len(self.p_ini))
 
-    # def run_model(self, reps=50):
-    #     self.define_tmat()
-    #
-    #     if self.trajectories:
-    #         M = ModelMFPTTrajectories(p_ini=self.p_ini, vnames=self.vars, tmat=self.tmat, propensity=self.prop)
-    #     else:
-    #         M = Model(p_ini=self.p_ini, vnames=self.vars, tmat=self.tmat, propensity=self.prop, n_stop=self.n_stop)
-    #
-    #     t0 = time.time()
-    #     M.run(tmax=1000, reps=reps)
-    #     print('total time: ', time.time() - t0)
-    #     t, series, steps = M.getStats()
-    #     print(steps, 'steps')
-
 
 # NEED to hardcode new reactions into self.prop
-
-class BnabFiniteSizeEffects(BnabGillespie):
+class BnabFiniteSizeEffects9(BnabGillespie):
     def __init__(self, p_ini, parameters):
         BnabGillespie.__init__(self, p_ini, parameters)
 
@@ -174,3 +159,151 @@ class BnabFiniteSizeEffects(BnabGillespie):
         self.tmat = np.zeros((self.len_ini, len(self.prop)), dtype=int)
 
 
+class BnabFiniteSizeEffects11(BnabGillespie):
+    def __init__(self, p_ini, parameters):
+        BnabGillespie.__init__(self, p_ini, parameters)
+
+        # First 11 reactions are death reactions
+        self.prop = (lambda ini:self.mu_ij['mu{0}{1}'.format(1, 0)] * ini[1],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(2, 0)] * ini[2],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(3, 0)] * ini[3],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(4, 0)] * ini[4],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(5, 0)] * ini[5],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(6, 0)] * ini[6],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(7, 0)] * ini[7],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(8, 0)] * ini[8],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(9, 0)] * ini[9],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(10, 0)] * ini[10],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(11, 0)] * ini[11],
+
+                     # Edge state 1: can only hop to the right to 2
+                     lambda ini:self.mu_ij['f{0}'.format(1)] * ini[1],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(1, 2)] * ini[1],
+
+                     lambda ini:self.mu_ij['f{0}'.format(2)] * ini[2],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(2, 1)] * ini[2],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(2, 3)] * ini[2],
+
+                     lambda ini:self.mu_ij['f{0}'.format(3)] * ini[3],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(3, 2)] * ini[3],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(3, 4)] * ini[3],
+
+                     lambda ini:self.mu_ij['f{0}'.format(4)] * ini[4],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(4, 3)] * ini[4],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(4, 5)] * ini[4],
+
+                     lambda ini:self.mu_ij['f{0}'.format(5)] * ini[5],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(5, 4)] * ini[5],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(5, 6)] * ini[5],
+
+                     # Middle bnAb state 6
+                     lambda ini:self.mu_ij['f{0}'.format(6)] * ini[6],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(6, 5)] * ini[6],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(6, 7)] * ini[6],
+
+                     lambda ini: self.mu_ij['f{0}'.format(7)] * ini[7],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(7, 6)] * ini[7],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(7, 8)] * ini[7],
+
+                     lambda ini: self.mu_ij['f{0}'.format(8)] * ini[8],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(8, 7)] * ini[8],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(8, 9)] * ini[8],
+
+                     lambda ini: self.mu_ij['f{0}'.format(9)] * ini[9],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(9, 8)] * ini[9],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(9, 10)] * ini[9],
+
+                     lambda ini: self.mu_ij['f{0}'.format(10)] * ini[10],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(10, 9)] * ini[10],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(10, 11)] * ini[10],
+
+                     # Edge state 11: can only hop to left to 10
+                     lambda ini:self.mu_ij['f{0}'.format(11)] * ini[11],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(11, 10)] * ini[11])
+
+        self.tmat = np.zeros((self.len_ini, len(self.prop)), dtype=int)
+
+
+class BnabFiniteSizeEffects15(BnabGillespie):
+    def __init__(self, p_ini, parameters):
+        BnabGillespie.__init__(self, p_ini, parameters)
+
+        # First 15 reactions are death reactions
+        self.prop = (lambda ini:self.mu_ij['mu{0}{1}'.format(1, 0)] * ini[1],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(2, 0)] * ini[2],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(3, 0)] * ini[3],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(4, 0)] * ini[4],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(5, 0)] * ini[5],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(6, 0)] * ini[6],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(7, 0)] * ini[7],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(8, 0)] * ini[8],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(9, 0)] * ini[9],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(10, 0)] * ini[10],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(11, 0)] * ini[11],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(12, 0)] * ini[12],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(13, 0)] * ini[13],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(14, 0)] * ini[14],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(15, 0)] * ini[15],
+
+                     # Edge state 1: can only hop to the right to 2
+                     lambda ini:self.mu_ij['f{0}'.format(1)] * ini[1],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(1, 2)] * ini[1],
+
+                     lambda ini:self.mu_ij['f{0}'.format(2)] * ini[2],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(2, 1)] * ini[2],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(2, 3)] * ini[2],
+
+                     lambda ini:self.mu_ij['f{0}'.format(3)] * ini[3],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(3, 2)] * ini[3],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(3, 4)] * ini[3],
+
+                     lambda ini:self.mu_ij['f{0}'.format(4)] * ini[4],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(4, 3)] * ini[4],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(4, 5)] * ini[4],
+
+                     lambda ini:self.mu_ij['f{0}'.format(5)] * ini[5],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(5, 4)] * ini[5],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(5, 6)] * ini[5],
+
+                     lambda ini:self.mu_ij['f{0}'.format(6)] * ini[6],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(6, 5)] * ini[6],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(6, 7)] * ini[6],
+
+                     lambda ini: self.mu_ij['f{0}'.format(7)] * ini[7],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(7, 6)] * ini[7],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(7, 8)] * ini[7],
+
+                     # Middle bnAb state 8
+                     lambda ini: self.mu_ij['f{0}'.format(8)] * ini[8],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(8, 7)] * ini[8],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(8, 9)] * ini[8],
+
+                     lambda ini: self.mu_ij['f{0}'.format(9)] * ini[9],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(9, 8)] * ini[9],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(9, 10)] * ini[9],
+
+                     lambda ini: self.mu_ij['f{0}'.format(10)] * ini[10],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(10, 9)] * ini[10],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(10, 11)] * ini[10],
+
+                     lambda ini: self.mu_ij['f{0}'.format(11)] * ini[11],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(11, 10)] * ini[11],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(11, 12)] * ini[11],
+
+                     lambda ini: self.mu_ij['f{0}'.format(12)] * ini[12],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(12, 11)] * ini[12],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(12, 13)] * ini[12],
+
+                     lambda ini: self.mu_ij['f{0}'.format(13)] * ini[13],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(13, 12)] * ini[13],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(13, 14)] * ini[13],
+
+                     lambda ini: self.mu_ij['f{0}'.format(14)] * ini[14],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(14, 13)] * ini[14],
+                     lambda ini: self.mu_ij['mu{0}{1}'.format(14, 15)] * ini[14],
+
+                     # Edge state 15: can only hop to left to 14
+                     lambda ini:self.mu_ij['f{0}'.format(15)] * ini[15],
+                     lambda ini:self.mu_ij['mu{0}{1}'.format(15, 14)] * ini[15])
+
+        self.tmat = np.zeros((self.len_ini, len(self.prop)), dtype=int)
