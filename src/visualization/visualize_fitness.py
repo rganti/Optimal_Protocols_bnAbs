@@ -1,4 +1,6 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 class Injection(object):
@@ -59,8 +61,9 @@ class InjectionKlDistance(Injection):
 
 class ProcessProtocolData(object):
 
-    def __init__(self, path, sigma_1_range, num_gcs=100.0):
-        self.sigma_1_range = sigma_1_range # np.sort(np.logspace(1.0, -1.0, num=15))[::-1]
+    def __init__(self, path, num_gcs=100.0):
+
+        self.sigma_1_range = np.loadtxt(path + "sigma_1_range")  # np.sort(np.logspace(1.0, -1.0, num=15))[::-1]
         self.fitness_array = []
         self.kl1_array = []
         self.kl2_matrix = []
@@ -71,7 +74,7 @@ class ProcessProtocolData(object):
 
     def load_arrays(self):
         for sigma1 in self.sigma_1_range:
-            print("Processing sigma_1 = {0}".format(sigma1))
+            print("Processing Sigma_1 = {0}".format(sigma1))
 
             p0 = []
             total_bnabs = []
@@ -86,7 +89,7 @@ class ProcessProtocolData(object):
             self.kl1_array.append(kl1.compute_kl_distance())
 
             self.fitness_array.append(kl1.f)
-            self.mean_bnab_array.append(np.array(total_bnabs)) #/ self.num_gcs)
+            self.mean_bnab_array.append(np.array(total_bnabs))  # / self.num_gcs)
 
             sigma2_range = np.loadtxt(path + "sigma2_range")
 
@@ -99,3 +102,87 @@ class ProcessProtocolData(object):
                 kl2_array.append(kl2.compute_kl_distance())
 
             self.kl2_matrix.append(kl2_array)
+
+    def plot_protocols(self):
+        sns.set_palette(sns.color_palette("hls", len(self.kl1_array)))
+        for i in range(len(self.kl1_array)):
+            plt.errorbar(self.kl2_matrix[i], self.mean_bnab_array[i], marker='o',
+                         label='$D(p_{0} || f_{1}) = ' + '%.2f' % self.kl1_array[i] + ', \\sigma_{1} = %.2f' %
+                               self.sigma_1_range[i] + ' $')
+
+        plt.legend(bbox_to_anchor=(1.05, 1.00))
+        plt.xlabel("$D(p_{1} || f_{2})$")
+        plt.ylabel("Number of bnAbs/GC")
+        plt.title("Prime and Boost Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
+
+
+class EnsembleProcessProtocolData(ProcessProtocolData):
+
+    def __init__(self, path):
+        ProcessProtocolData.__init__(self, path)
+
+    def process_trial_statistics(self):
+        for sigma1 in self.sigma_1_range:
+            print("Processing Sigma_1 = {0}".format(sigma1))
+
+            total_bnabs = []
+            survival_fraction = []
+            for t in range(30):
+                path = self.path + "Sigma_{0}/Trial_{1}/".format(round(sigma1, 2), t)
+                total_bnabs.append(np.loadtxt(path + "total_bnabs"))
+                survival_fraction.append(float(len(np.loadtxt(path + "successful_exit")))/self.num_gcs)
+
+            sigma_path = self.path + "Sigma_{0}/".format(sigma1)
+            np.savetxt(sigma_path + "mean_bnabs", np.mean(np.array(total_bnabs), axis=0), fmt='%f')
+            np.savetxt(sigma_path + "error_bnabs", np.std(np.array(total_bnabs), axis=0), fmt='%f')
+            np.savetxt(sigma_path + "survival_fraction", [np.mean(survival_fraction)], fmt='%f')
+            np.savetxt(sigma_path + "sigma2_range",
+                       np.loadtxt(self.path + "Sigma_{0}/Trial_0/sigma2_range".format(round(sigma1, 2))), fmt='%f')
+
+    def load_arrays(self):
+        for sigma1 in self.sigma_1_range:
+            print("Processing Sigma_1 = {0}".format(sigma1))
+
+            path = self.path + "Sigma_{0}/".format(round(sigma1, 2))
+            self.mean_bnab_array.append(np.loadtxt(path + "mean_bnabs"))
+            self.error_bnab_array.append(np.loadtxt(path + "error_bnabs"))
+
+            trial_path = self.path + "Sigma_{0}/Trial_0/".format(round(sigma1, 2))
+            p0_mean = np.loadtxt(trial_path + "event_prob")
+            print("len(p0_mean) = " + str(len(p0_mean)))
+            kl1 = InjectionKlDistance(p0_mean, sigma=sigma1, num_odes=len(p0_mean) + 1)
+            self.kl1_array.append(kl1.compute_kl_distance())
+
+            self.fitness_array.append(kl1.f)
+
+            sigma2_range = np.loadtxt(trial_path + "sigma2_range")
+
+            kl2_array = []
+            for sigma2 in sigma2_range:
+                p1_mean = np.loadtxt(trial_path + "n_ave") / np.sum(np.loadtxt(trial_path + "n_ave"))
+                kl2 = InjectionKlDistance(p1_mean, sigma=sigma2, num_odes=len(p1_mean) + 1)
+                kl2_array.append(kl2.compute_kl_distance())
+
+            self.kl2_matrix.append(kl2_array)
+
+    def plot_survival_fraction(self):
+        survival_fraction = []
+        for sigma1 in self.sigma_1_range:
+            survival_fraction.append(np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(sigma1, 2))))
+
+        plt.plot(self.kl1_array, survival_fraction, marker='o')
+        plt.xlabel("$D(p_{0} || f_{1})$")
+        plt.ylabel("P(GC Survival)")
+
+    def plot_protocols(self):
+        sns.set_palette(sns.color_palette("hls", len(self.kl1_array)))
+        for i in range(len(self.kl1_array)):
+            plt.errorbar(self.kl2_matrix[i], self.mean_bnab_array[i], yerr=self.error_bnab_array[i], marker='o',
+                         label='$D(p_{0} || f_{1}) = ' + '%.2f' % self.kl1_array[i] +
+                               ', \\sigma_{1} = %.2f' % self.sigma_1_range[i] + ' $')
+
+        plt.legend(bbox_to_anchor=(1.05, 1.00))
+        plt.xlabel("$D(p_{1} || f_{2})$")
+        plt.ylabel("Number of bnAbs/GC")
+        plt.title("Prime and Boost Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
+
