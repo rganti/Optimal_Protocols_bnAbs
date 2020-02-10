@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    parameters = {'n_initial': define_n_initial(7), 'sigma': args.sigma1, 'death_rate': 0.1,
+    parameters = {'n_initial': define_n_initial(11), 'sigma': args.sigma1, 'death_rate': 0.05,
                   'fraction': 7.0 / 8.0, 'mutation_rate': 0.05, 'n_stop': 200}
 
     if args.sigma1:
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         # sigma_1_range = np.logspace(1.0, -1.0, num=15)
         # # sigma_1_range = np.logspace(0.6, 0.0, num=20)
-        sigma_1_range = [0.7, 1.0, 1.3, 1.7, 1.93, 2.1, 2.3, 3.0]
+        sigma_1_range = [0.3, 0.7, 1.0, 1.3, 1.5, 1.6, 1.7, 2.0]
         np.savetxt("sigma_1_range", sigma_1_range[::-1], fmt='%f')
 
         for sigma1 in sigma_1_range:
