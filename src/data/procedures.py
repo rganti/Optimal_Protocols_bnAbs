@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from src.data.gillespie_models import ModelMFPTTrajectories, ModelIndividualGC, Model
+from src.data.gillespie_models import ModelMFPTTrajectories, ModelIndividualGC, Model, ModelTrajectories
 from src.data.simulation_setup import BnabGillespie, BnabFiniteSizeEffects9, BnabFiniteSizeEffects11, \
     BnabFiniteSizeEffects15
 from src.data.ssc_setup import SSCLaunch
@@ -109,7 +109,7 @@ class Simulation(object):
         np.savetxt("fraction", [self.gillespie_bnab.bnab.fraction], fmt='%f')
 
         t0 = time.time()
-        M.run(tmax=1000, reps=reps)
+        M.run(tmax=2000, reps=reps)
         print('total time: ', time.time() - t0)
 
         print("Starting post-processing...")
@@ -129,7 +129,6 @@ class ProcedureDelS1S2(Procedure):
         self.total_bnabs = []
         self.num_reps = 100
         self.trajectories = trajectories
-        # self.n_initial = [20.0, 5.0, 0.0, 0.0, 0.0, 5.0, 20.0]
         self.n_initial = parameters['n_initial']
         self.p_ini = self.n_initial / np.sum(self.n_initial)
         self.parameters = parameters
@@ -168,6 +167,12 @@ class ProcedureDelS1S2(Procedure):
         else:
             np.savetxt("total_bnabs", np.zeros(len(self.sigma[1:])), fmt='%f')
 
+    def post_process(self, bnab_next_injection):
+        print("Starting post-processing...")
+        process_hashed_files = GillespieGCExit(n_exit=self.parameters['n_stop'],
+                                       num_odes=bnab_next_injection.gillespie_bnab.len_ini)
+        process_hashed_files.populate_pn(index=1)
+
     def next_injection(self, index, sigma):
         make_and_cd("injection_{0}_sig_{1}".format(index, round(sigma, 2)))
 
@@ -204,7 +209,7 @@ class ProcedureDelS1S2(Procedure):
                                       propensity=bnab_next_injection.gillespie_bnab.prop,
                                       n_stop=self.parameters['n_stop'])
 
-            M.run(tmax=1000, reps=count)
+            M.run(tmax=2000, reps=count)
             # tc.append(M.t_exit)
 
             count += 1
@@ -216,7 +221,4 @@ class ProcedureDelS1S2(Procedure):
         np.savetxt("mutation_rate", [bnab_next_injection.gillespie_bnab.bnab.mu_ij], fmt='%f')
         np.savetxt("fraction", [bnab_next_injection.gillespie_bnab.bnab.fraction], fmt='%f')
 
-        print("Starting post-processing...")
-        post_process = GillespieGCExit(n_exit=self.parameters['n_stop'],
-                                       num_odes=bnab_next_injection.gillespie_bnab.len_ini)
-        post_process.populate_pn(index=1)
+        self.post_process(bnab_next_injection)
