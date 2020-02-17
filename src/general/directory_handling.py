@@ -24,13 +24,3 @@ def make_and_cd(directory_name):
         print("Made " + directory_name)
     os.chdir(directory_name)
     print("Changed into directory: " + str(os.getcwd()))
-
-
-def write_results(data, i):
-    f = open("hashed_traj_{0}".format(i), "w")
-    for line in data:
-        x = [l for l in line]
-        for entry in x:
-            f.write(str(entry) + " ")
-        f.write("\n")
-    f.close()
