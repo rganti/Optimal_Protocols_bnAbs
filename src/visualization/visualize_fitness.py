@@ -130,18 +130,23 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
             for t in range(30):
                 path = self.path + "Sigma_{0}/Trial_{1}/".format(round(sigma1, 2), t)
                 total_bnabs.append(np.loadtxt(path + "total_bnabs"))
-                survival_fraction.append(float(len(np.loadtxt(path + "successful_exit")))/self.num_gcs)
+                successful_exit = np.loadtxt(path + "successful_exit")
+                if len(successful_exit) > 0:
+                    survival_fraction.append(float(len(successful_exit))/self.num_gcs)
+                else:
+                    survival_fraction.append(0)
 
             sigma_path = self.path + "Sigma_{0}/".format(sigma1)
             np.savetxt(sigma_path + "mean_bnabs", np.mean(np.array(total_bnabs), axis=0), fmt='%f')
             np.savetxt(sigma_path + "error_bnabs", np.std(np.array(total_bnabs), axis=0), fmt='%f')
             np.savetxt(sigma_path + "survival_fraction", [np.mean(survival_fraction)], fmt='%f')
+            # np.savetxt(sigma_path + "survival_fraction_array", survival_fraction, fmt='%f')
             np.savetxt(sigma_path + "sigma2_range",
                        np.loadtxt(self.path + "Sigma_{0}/Trial_0/sigma2_range".format(round(sigma1, 2))), fmt='%f')
 
     def load_arrays(self):
         for sigma1 in self.sigma_1_range:
-            print("Processing Sigma_1 = {0}".format(sigma1))
+            # print("Processing Sigma_1 = {0}".format(sigma1))
 
             path = self.path + "Sigma_{0}/".format(round(sigma1, 2))
             self.mean_bnab_array.append(np.loadtxt(path + "mean_bnabs"))
@@ -149,7 +154,7 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
 
             trial_path = self.path + "Sigma_{0}/Trial_0/".format(round(sigma1, 2))
             p0_mean = np.loadtxt(trial_path + "event_prob")
-            print("len(p0_mean) = " + str(len(p0_mean)))
+            # print("len(p0_mean) = " + str(len(p0_mean)))
             kl1 = InjectionKlDistance(p0_mean, sigma=sigma1, num_odes=len(p0_mean) + 1)
             self.kl1_array.append(kl1.compute_kl_distance())
 
@@ -166,23 +171,29 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
             self.kl2_matrix.append(kl2_array)
 
     def plot_survival_fraction(self):
-        survival_fraction = []
-        for sigma1 in self.sigma_1_range:
-            survival_fraction.append(np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(sigma1, 2))))
+        # survival_fraction = []
+        for i in range(len(self.sigma_1_range)):
+            # survival_fraction.append(np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(self.sigma_1_range[i], 2))))
 
-        plt.plot(self.kl1_array, survival_fraction, marker='o')
+            survival_fraction = np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(self.sigma_1_range[i], 2)))
+            plt.plot(self.kl1_array[i], survival_fraction, marker='o', linestyle='None',
+                     label='$\\sigma_{1} = %.2f' % self.sigma_1_range[i] + ' $')
+
+        # plt.plot(self.kl1_array, survival_fraction, marker='o', linestyle='None')
         plt.xlabel("$D(p_{0} || f_{1})$")
         plt.ylabel("P(GC Survival)")
+        plt.title("Survival Fraction, Num_Bins = {0}".format(len(self.fitness_array[0])))
 
-    def plot_protocols(self):
-        sns.set_palette(sns.color_palette("hls", len(self.kl1_array)))
+    def plot_protocols(self, set_sns=False):
+        if set_sns:
+            sns.set_palette(sns.color_palette("hls", len(self.kl1_array)))
         for i in range(len(self.kl1_array)):
             plt.errorbar(self.kl2_matrix[i], self.mean_bnab_array[i], yerr=self.error_bnab_array[i], marker='o',
                          label='$D(p_{0} || f_{1}) = ' + '%.2f' % self.kl1_array[i] +
                                ', \\sigma_{1} = %.2f' % self.sigma_1_range[i] + ' $')
 
-        plt.legend(bbox_to_anchor=(1.05, 1.00))
+        # plt.legend(bbox_to_anchor=(1.05, 1.00))
         plt.xlabel("$D(p_{1} || f_{2})$")
-        plt.ylabel("Number of bnAbs/GC")
-        plt.title("Prime and Boost Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
+        plt.ylabel("Number of bnAbs")
+        plt.title("Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
 
