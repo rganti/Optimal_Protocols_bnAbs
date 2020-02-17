@@ -2,7 +2,7 @@ from numpy.random import multinomial, random
 from numpy import zeros, log
 import numpy as np
 import pickle
-from src.general.directory_handling import write_results
+from src.general.io_handling import write_results
 
 
 class Model(object):
@@ -174,7 +174,7 @@ class ModelTrajectories(Model):
         self.t_exit = None
 
     def sample_initial_population_nexit(self):
-        ini = np.zeros(7, dtype=int)
+        ini = np.zeros(len(self.p_ini), dtype=int)
 
         for i in range(self.ntot):
             print("n_i = " + str(self.n_exit))
@@ -383,12 +383,13 @@ class ModelTrajectories(Model):
         return tc, sequence_time[:end]
 
 
+# Need to remove time until access. Makes array way too huge.
 class ModelMFPTTrajectories(ModelTrajectories):
 
     def __init__(self, p_ini, vnames, tmat, propensity, n_exit=None):
         ModelTrajectories.__init__(self, p_ini, vnames, tmat, propensity, n_exit=n_exit)
-        self.start_index = 10
-        self.time_start_index = 2
+        self.start_index = 2
+        # self.time_start_index = 2
         self.sequence_dimensions = self.nvars + self.start_index
 
     def run_GSSA(self, tmax, i):
@@ -416,8 +417,9 @@ class ModelMFPTTrajectories(ModelTrajectories):
             # Setting 1st entry to starting bin of initial sequence
             sequence_array[index:next_index][:, 1] = i - self.start_index
 
-            # Recording time of access to bin of birth
-            sequence_array[index:next_index][:, i - (self.start_index - self.time_start_index)] = 1e-07
+            # # Recording time of access to bin of birth
+            # sequence_array[index:next_index][:, i - (self.start_index - self.time_start_index)] = 1e-07
+
             index += int(new_ini[i])
 
         return sequence_array
@@ -452,16 +454,16 @@ class ModelMFPTTrajectories(ModelTrajectories):
         seq_indices = np.nonzero(ini_sequence[:, self.start_index:][:, seq_bin])[0]
         chosen_seq = np.random.choice(seq_indices)
 
-        # Lethal mutation: Recording t_{d} in 2nd entry = 0 (next_seq_bin) + 2 (time_start_index) of sequence array
-        # (indices 0 and 1 are for sequence and bin index)
-        if next_seq_bin == 0:
-            ini_sequence[chosen_seq][next_seq_bin + self.time_start_index] = tc
-
-        else:
-            # Checking if time in the bin is 0.0; if not, bin has already been accessed by lineage
-            # If next_seq_bin + self.time_start_index has already been accessed before, time is not recorded.
-            if ini_sequence[chosen_seq][next_seq_bin + self.time_start_index] == 0.0:
-                ini_sequence[chosen_seq][next_seq_bin + self.time_start_index] = tc
+        # # Lethal mutation: Recording t_{d} in 2nd entry = 0 (next_seq_bin) + 2 (time_start_index) of sequence array
+        # # (indices 0 and 1 are for sequence and bin index)
+        # if next_seq_bin == 0:
+        #     ini_sequence[chosen_seq][next_seq_bin + self.time_start_index] = tc
+        #
+        # else:
+        #     # Checking if time in the bin is 0.0; if not, bin has already been accessed by lineage
+        #     # If next_seq_bin + self.time_start_index has already been accessed before, time is not recorded.
+        #     if ini_sequence[chosen_seq][next_seq_bin + self.time_start_index] == 0.0:
+        #         ini_sequence[chosen_seq][next_seq_bin + self.time_start_index] = tc
 
         # Adding transition event to sequence array
 
