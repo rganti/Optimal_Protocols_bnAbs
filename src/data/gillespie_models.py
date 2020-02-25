@@ -383,6 +383,80 @@ class ModelTrajectories(Model):
         return tc, sequence_time[:end]
 
 
+class ModelBoostTrajectories(ModelTrajectories):
+
+    def __init__(self, prime_sequences, p_ini, vnames, tmat, propensity):
+        ModelTrajectories.__init__(self, p_ini, vnames, tmat, propensity)
+
+        # Sequences generated from priming
+        self.prime_sequences = prime_sequences
+        self.number_sequences = self.prime_sequences.shape[1]
+
+        print("Calculations with ModelBoostTrajectories class.")
+
+    def run(self, method='SSA', tmax=10, reps=1):
+        tvec = range(1, tmax)
+
+        if method == 'SSA':
+            res = zeros((tmax, self.nvars), dtype=float)
+            tc, sequence_time = self.GSSA(res, tmax=tmax, reps=reps)
+
+            if self.prime_sequences.shape[1] != sequence_time.shape[1]:
+                new_prime_sequences = np.zeros((self.prime_sequences.shape[0], sequence_time.shape[1],
+                                                self.prime_sequences.shape[2]), dtype=float)
+                new_prime_sequences[:self.prime_sequences.shape[0], :self.prime_sequences.shape[1],
+                :self.prime_sequences.shape[2]] = self.prime_sequences
+                self.prime_sequences = new_prime_sequences
+
+            prime_boost_sequence_time = np.vstack((self.prime_sequences, sequence_time))
+            pickle_trajectories(prime_boost_sequence_time, reps)
+            write_results(res, reps)
+        elif method == 'SSAct':
+            pass
+
+        self.time = tvec
+        np.savetxt("time", self.time, fmt='%f')
+
+        # self.steps = steps
+        # np.savetxt("steps", [steps], fmt='%f')
+
+    def initialize_sequence_array(self):
+        dynamic_prime_sequences = np.copy(self.prime_sequences[-1])
+        new_indices = []
+        for i in range(self.ntot):
+            n_i_exit = np.sum(dynamic_prime_sequences, axis=0, dtype=np.float)[2:]
+            print("n_i = " + str(n_i_exit))
+            p_ini = n_i_exit / np.sum(n_i_exit)
+
+            print("p_ini = " + str(p_ini))
+            events = multinomial(1, p_ini)
+            # print("events = " + str(events))
+            bin_index = events.nonzero()[0][0]
+
+            seq_indices = [j for j in range(len(dynamic_prime_sequences)) if
+                           dynamic_prime_sequences[j][2:][bin_index] == 1]
+
+            chosen_seq = np.random.choice(seq_indices)
+            new_indices.append(chosen_seq)
+
+            dynamic_prime_sequences[chosen_seq].fill(0)
+
+        remaining_indices = np.array([])
+        for j in range(1, dynamic_prime_sequences.shape[1] - 1):
+            alive_indices = np.array([index for index in range(len(dynamic_prime_sequences)) if
+                                      dynamic_prime_sequences[:, 1:][index][j] == 1])
+            remaining_indices = np.append(remaining_indices, alive_indices)
+
+        boost_sequence_array = np.copy(self.prime_sequences[-1])
+
+        death_entry = np.zeros(8, dtype=int)
+        death_entry[0] = 1
+        for i in remaining_indices:
+            boost_sequence_array[int(i)][1:] = death_entry
+
+        return boost_sequence_array
+
+
 # Need to remove time until access. Makes array way too huge.
 class ModelMFPTTrajectories(ModelTrajectories):
 
