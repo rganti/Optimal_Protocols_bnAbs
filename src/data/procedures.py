@@ -15,19 +15,21 @@ from src.visualization.visualize_fitness import Injection
 class Procedure(object):
 
     def __init__(self, parameters):
-        self.n_initial = [20.0, 5.0, 0.0, 0.0, 0.0, 5.0, 20.0]
+        self.n_initial = parameters['n_initial']
         self.p_ini = self.n_initial / np.sum(self.n_initial)
 
         self.parameters = parameters
+        self.num_reps = 1000
 
         self.home = os.getcwd()
-        self.sigma = [parameters['sigma'], 0.4]
+        self.sigma = [parameters['sigma'], 1.0, 0.8]  #, parameters['sigma2'], parameters['sigma3']]
         self.total_bnabs = 0.0
 
     def run_cocktail(self):
         make_and_cd("Cocktail")
+        self.parameters['sigma'] = self.parameters['sigma3']
         bnab_cocktail = Simulation(self.p_ini, self.parameters)
-        bnab_cocktail.run()
+        bnab_cocktail.run(reps=self.num_reps)
         os.chdir(self.home)
 
     def get_i1_values(self):
@@ -44,6 +46,7 @@ class Procedure(object):
         success_exit = np.loadtxt("../successful_exit")
         reps = len(success_exit)
 
+        self.parameters['sigma'] = sigma
         bnab = Simulation(p_n, self.parameters)
         bnab.run(reps=int(reps))
 
@@ -55,7 +58,7 @@ class Procedure(object):
         sigma_1_directory = os.getcwd()
 
         bnab_sequential = Simulation(self.p_ini, self.parameters)
-        bnab_sequential.run(reps=50)
+        bnab_sequential.run(reps=self.num_reps)
 
         # seq_dir = os.getcwd()
 
@@ -63,8 +66,11 @@ class Procedure(object):
         self.next_injection(index=2, sigma=self.sigma[1])
         # os.chdir(seq_dir)
 
-        n4 = np.loadtxt("n4")
-        self.total_bnabs = np.sum(n4)
+        # Injection 3
+        self.next_injection(index=3, sigma=self.sigma[2])
+
+        n_bnabs = np.loadtxt("n{0}".format(int((len(self.p_ini) + 1) / 2)))
+        self.total_bnabs = np.sum(n_bnabs)
 
         os.chdir(sigma_1_directory)
 
@@ -109,7 +115,7 @@ class Simulation(object):
         np.savetxt("fraction", [self.gillespie_bnab.bnab.fraction], fmt='%f')
 
         t0 = time.time()
-        M.run(tmax=2000, reps=reps)
+        M.run(tmax=4000, reps=reps)
         print('total time: ', time.time() - t0)
 
         print("Starting post-processing...")
@@ -125,7 +131,7 @@ class ProcedureDelS1S2(Procedure):
 
     def __init__(self, parameters, trajectories=False):
         Procedure.__init__(self, parameters)
-        self.sigma = np.logspace(np.log10(parameters['sigma']), -1.0, num=10)
+        self.sigma = np.logspace(np.log10(parameters['sigma']), -1.0, num=20)
         self.total_bnabs = []
         self.num_reps = 100
         self.trajectories = trajectories
@@ -209,7 +215,7 @@ class ProcedureDelS1S2(Procedure):
                                       propensity=bnab_next_injection.gillespie_bnab.prop,
                                       n_stop=self.parameters['n_stop'])
 
-            M.run(tmax=2000, reps=count)
+            M.run(tmax=4000, reps=count)
             # tc.append(M.t_exit)
 
             count += 1
@@ -222,3 +228,13 @@ class ProcedureDelS1S2(Procedure):
         np.savetxt("fraction", [bnab_next_injection.gillespie_bnab.bnab.fraction], fmt='%f')
 
         self.post_process(bnab_next_injection)
+
+
+def define_n_initial(num_bins):
+    n_initial = np.zeros(num_bins, dtype=float)
+    n_initial[0] = 20.0
+    n_initial[1] = 5.0
+    n_initial[-1] = 20.0
+    n_initial[-2] = 5.0
+
+    return n_initial
