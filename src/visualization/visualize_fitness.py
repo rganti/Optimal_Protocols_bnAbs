@@ -121,29 +121,6 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
     def __init__(self, path):
         ProcessProtocolData.__init__(self, path)
 
-    def process_trial_statistics(self):
-        for sigma1 in self.sigma_1_range:
-            print("Processing Sigma_1 = {0}".format(sigma1))
-
-            total_bnabs = []
-            survival_fraction = []
-            for t in range(30):
-                path = self.path + "Sigma_{0}/Trial_{1}/".format(round(sigma1, 2), t)
-                total_bnabs.append(np.loadtxt(path + "total_bnabs"))
-                successful_exit = np.loadtxt(path + "successful_exit")
-                if len(successful_exit) > 0:
-                    survival_fraction.append(float(len(successful_exit))/self.num_gcs)
-                else:
-                    survival_fraction.append(0)
-
-            sigma_path = self.path + "Sigma_{0}/".format(sigma1)
-            np.savetxt(sigma_path + "mean_bnabs", np.mean(np.array(total_bnabs), axis=0), fmt='%f')
-            np.savetxt(sigma_path + "error_bnabs", np.std(np.array(total_bnabs), axis=0), fmt='%f')
-            np.savetxt(sigma_path + "survival_fraction", [np.mean(survival_fraction)], fmt='%f')
-            # np.savetxt(sigma_path + "survival_fraction_array", survival_fraction, fmt='%f')
-            np.savetxt(sigma_path + "sigma2_range",
-                       np.loadtxt(self.path + "Sigma_{0}/Trial_0/sigma2_range".format(round(sigma1, 2))), fmt='%f')
-
     def load_arrays(self):
         for sigma1 in self.sigma_1_range:
             # print("Processing Sigma_1 = {0}".format(sigma1))
@@ -170,7 +147,26 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
 
             self.kl2_matrix.append(kl2_array)
 
+    def load_kl1_array(self):
+        for sigma1 in self.sigma_1_range:
+            trial_path = self.path + "Sigma_{0}/Trial_0/".format(round(sigma1, 2))
+            p0_mean = np.loadtxt(trial_path + "event_prob")
+            kl1 = InjectionKlDistance(p0_mean, sigma=sigma1, num_odes=len(p0_mean) + 1)
+            self.kl1_array.append(kl1.compute_kl_distance())
+            self.fitness_array.append(kl1.f)
+
     def plot_survival_fraction(self):
+        survival_fraction = []
+        for i in range(len(self.sigma_1_range)):
+            survival_fraction.append(np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(self.sigma_1_range[i], 2))))
+
+        plt.plot(self.kl1_array, survival_fraction, marker='o')
+
+        plt.xlabel("$D(p_{0} || f_{1})$")
+        plt.ylabel("P(GC Survival)")
+        plt.title("Survival Fraction, Num_Bins = {0}".format(len(self.fitness_array[0])))
+
+    def plot_survival_fraction_colored(self):
         # survival_fraction = []
         for i in range(len(self.sigma_1_range)):
             # survival_fraction.append(np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(self.sigma_1_range[i], 2))))
@@ -194,6 +190,6 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
 
         # plt.legend(bbox_to_anchor=(1.05, 1.00))
         plt.xlabel("$D(p_{1} || f_{2})$")
-        plt.ylabel("Number of bnAbs")
+        plt.ylabel("bnAb titers")
         plt.title("Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
 
