@@ -3,13 +3,13 @@ import os
 import socket
 
 import numpy as np
-from src.data.generate_protocol_curves import define_n_initial, SlurmProtocolCurves, QsubProtocolCurves
+from src.data.generate_protocol_curves import SlurmProtocolCurves, QsubProtocolCurves
 from src.data_process.simulation_post_process import GillespieGCExit
 from src.data_process.trajectories_post_process import ComputeTrajectorySuccessProbability
 from src.general.directory_handling import make_and_cd
 from src.general.queuing import run_sbatch, run_qsub
 
-from src.data.procedures import ProcedureDelS1S2
+from src.data.procedures import ProcedureDelS1S2, define_n_initial
 
 
 class SlurmOptimalPairs(SlurmProtocolCurves):
@@ -45,8 +45,10 @@ class ProcedureDelS1S2OptimalPairs(ProcedureDelS1S2):
         process_hashed_files = GillespieGCExit(n_exit=self.parameters['n_stop'],
                                                num_odes=bnab_next_injection.gillespie_bnab.len_ini)
         process_hashed_files.populate_pn(index=1)
-        process_trajectories = ComputeTrajectorySuccessProbability(num_odes=len(bnab_next_injection.p_ini)+1)
-        process_trajectories.process_trajectories()
+
+        if self.trajectories:
+            process_trajectories = ComputeTrajectorySuccessProbability(num_odes=len(bnab_next_injection.p_ini)+1)
+            process_trajectories.process_trajectories()
 
 
 if __name__ == "__main__":
@@ -67,12 +69,12 @@ if __name__ == "__main__":
         parameters['sigma'] = args.sigma1
         parameters['sigma2'] = args.sigma2
 
-        protocol = ProcedureDelS1S2OptimalPairs(parameters, trajectories=True)
+        protocol = ProcedureDelS1S2OptimalPairs(parameters, trajectories=False)
         protocol.run_sequential()
 
     else:
         optimal_pairs = np.loadtxt("optimal_pairs")
-        make_and_cd("optimal_boost_2")
+        make_and_cd("optimal_boost")
 
         home = os.getcwd()
 
