@@ -1,7 +1,8 @@
 Cookiecutter_bnAb_protocols
 ==============================
 
-The project aims to use a 1 dimensional fitness landscape in a breadth space to determine which injection protocols maximize bnAb production  and whfeatures of the optimal protocols.
+The project aims to use a 1 dimensional fitness landscape in a breadth space to determine which injection protocols 
+maximize bnAb production and features of the optimal protocols.
 
 Project Organization
 ------------
