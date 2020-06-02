@@ -4,6 +4,15 @@ Cookiecutter_bnAb_protocols
 The project aims to use a 1 dimensional fitness landscape in a breadth space to determine which injection protocols 
 maximize bnAb production and features of the optimal protocols.
 
+Required packages specified in requirements.txt: in particular, need to install numpy, ete, and seaborn.  
+
+To install packages, run from head directory (Optimal_Protocols_bnAbs/):  
+
+python setup.py develop  
+
+Please look at Simulations class in procedures.py to see how simulations are setup. Also refer to gillespie_models.py 
+to see setup of gillespie simulations.
+
 Project Organization
 ------------
 
