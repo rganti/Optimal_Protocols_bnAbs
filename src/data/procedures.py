@@ -1,14 +1,16 @@
 import os
+import pickle
 import time
 
 import numpy as np
 
-from src.data.gillespie_models import ModelMFPTTrajectories, ModelIndividualGC, Model, ModelTrajectories
+from src.data.gillespie_models import ModelMFPTTrajectories, ModelIndividualGC, Model, \
+    ModelTrajectories, ModelBoostTrajectories
 from src.data.simulation_setup import BnabGillespie, BnabFiniteSizeEffects9, BnabFiniteSizeEffects11, \
     BnabFiniteSizeEffects15
 from src.data.ssc_setup import SSCLaunch
-from src.general.directory_handling import make_and_cd
 from src.data_process.simulation_post_process import print_info, GillespieGCExit
+from src.general.directory_handling import make_and_cd
 from src.visualization.visualize_fitness import Injection
 
 
@@ -22,7 +24,7 @@ class Procedure(object):
         self.num_reps = 1000
 
         self.home = os.getcwd()
-        self.sigma = [parameters['sigma'], 1.0, 0.8]  #, parameters['sigma2'], parameters['sigma3']]
+        self.sigma = [parameters['sigma'], parameters['sigma2'], parameters['sigma3']]
         self.total_bnabs = 0.0
 
     def run_cocktail(self):
@@ -53,7 +55,7 @@ class Procedure(object):
     def run_sequential(self):
 
         # Injection 1
-        # make_and_cd("Sequential")
+        make_and_cd("Sequential")
         make_and_cd("Sigma_{0}".format(round(self.sigma[0], 2)))
         sigma_1_directory = os.getcwd()
 
@@ -82,9 +84,10 @@ class Procedure(object):
 
 class Simulation(object):
 
-    def __init__(self, p_ini, parameters, trajectories=False):
+    def __init__(self, p_ini, parameters, trajectories=False, trees=False):
         self.p_ini = p_ini
         self.trajectories = trajectories
+        self.trees = trees
         self.parameters = parameters
 
         if len(self.p_ini) == 9:
@@ -103,6 +106,10 @@ class Simulation(object):
         if self.trajectories:
             M = ModelMFPTTrajectories(p_ini=self.p_ini, vnames=self.gillespie_bnab.vars,
                                       tmat=self.gillespie_bnab.tmat, propensity=self.gillespie_bnab.prop)
+        elif self.trees:
+            print("Running phylogenetic trees...")
+            M = ModelTrajectories(p_ini=self.p_ini, vnames=self.gillespie_bnab.vars,
+                                  tmat=self.gillespie_bnab.tmat, propensity=self.gillespie_bnab.prop)
         else:
             M = Model(p_ini=self.p_ini, vnames=self.gillespie_bnab.vars, tmat=self.gillespie_bnab.tmat,
                       propensity=self.gillespie_bnab.prop, n_stop=self.parameters['n_stop'])
@@ -129,18 +136,19 @@ class Simulation(object):
 
 class ProcedureDelS1S2(Procedure):
 
-    def __init__(self, parameters, trajectories=False):
+    def __init__(self, parameters, trajectories=False, trees=False):
         Procedure.__init__(self, parameters)
         self.sigma = np.logspace(np.log10(parameters['sigma']), -1.0, num=20)
         self.total_bnabs = []
         self.num_reps = 100
         self.trajectories = trajectories
+        self.trees = trees
         self.n_initial = parameters['n_initial']
         self.p_ini = self.n_initial / np.sum(self.n_initial)
         self.parameters = parameters
 
     def run_prime(self):
-        bnab_prime = Simulation(self.p_ini, self.parameters, trajectories=self.trajectories)
+        bnab_prime = Simulation(self.p_ini, self.parameters, trajectories=self.trajectories, trees=self.trees)
         bnab_prime.run(reps=self.num_reps)
 
     def run_sequential(self):
@@ -189,8 +197,6 @@ class ProcedureDelS1S2(Procedure):
             success_exit = np.array([success_exit])
 
         count = 0
-        # tc = []
-
         for entry in success_exit:
             traj_index = int(entry[0])
 
@@ -200,15 +206,25 @@ class ProcedureDelS1S2(Procedure):
             n_i = np.loadtxt("../hashed_traj_{0}".format(traj_index))
             n_i_exit = n_i[exit_index]
 
-            p_ini = n_i_exit[1:]/np.sum(n_i_exit[1:])
+            p_ini = n_i_exit[1:] / np.sum(n_i_exit[1:])
 
-            bnab_next_injection = Simulation(self.p_ini, self.parameters, trajectories=self.trajectories)
+            bnab_next_injection = Simulation(self.p_ini, self.parameters,
+                                             trajectories=self.trajectories, trees=self.trees)
 
             if self.trajectories:
                 M = ModelMFPTTrajectories(p_ini=p_ini, vnames=bnab_next_injection.gillespie_bnab.vars,
                                           tmat=bnab_next_injection.gillespie_bnab.tmat,
                                           propensity=bnab_next_injection.gillespie_bnab.prop, n_exit=n_i_exit[1:])
+            elif self.trees:
+                pickle_in = open("../trajectory_{0}.pickle".format(traj_index), "rb")
+                sequences = pickle.load(pickle_in)
+                pickle_in.close()
 
+                print("Running Boost trees...")
+                M = ModelBoostTrajectories(prime_sequences=sequences, p_ini=p_ini,
+                                           vnames=bnab_next_injection.gillespie_bnab.vars,
+                                           tmat=bnab_next_injection.gillespie_bnab.tmat,
+                                           propensity=bnab_next_injection.gillespie_bnab.prop, n_exit=n_i_exit[1:])
             else:
                 M = ModelIndividualGC(n_exit=n_i_exit[1:], p_ini=p_ini, vnames=bnab_next_injection.gillespie_bnab.vars,
                                       tmat=bnab_next_injection.gillespie_bnab.tmat,
@@ -216,11 +232,9 @@ class ProcedureDelS1S2(Procedure):
                                       n_stop=self.parameters['n_stop'])
 
             M.run(tmax=4000, reps=count)
-            # tc.append(M.t_exit)
 
             count += 1
 
-        # np.savetxt("tc_gc_exit", tc, fmt='%f')
         np.savetxt("fitness", bnab_next_injection.gillespie_bnab.bnab.fitness.f, fmt='%f')
         np.savetxt("sigma", [bnab_next_injection.gillespie_bnab.bnab.fitness.sigma], fmt='%f')
         np.savetxt("death_rate", [bnab_next_injection.gillespie_bnab.bnab.mu_i0], fmt='%f')
