@@ -1,11 +1,27 @@
+import os
+
 import numpy as np
+
 from src.visualization.visualize_fitness import InjectionKlDistance
+
+
+def dict_to_array(dictionary, num_odes=16):
+    array = np.zeros(num_odes)
+    for i in range(1, num_odes):
+        array[i] = dictionary['N{0}'.format(i)]
+
+    return array
+
+
+def compute_n_ave(path):
+    n_ave_array = [np.loadtxt(path + "Trial_{0}/n_ave".format(t)) for t in range(30)]
+    return np.mean(n_ave_array, axis=0)
 
 
 class EntropyDistributions(object):
 
     def __init__(self, path=""):
-        self.path = path  # "Sigma_{0}/Trial_0/".format(round(self.sigma, 2))
+        self.path = path
         self.p0 = np.loadtxt(self.path + "event_prob")
         self.sigma = np.loadtxt(self.path + "sigma")
         self.h_array = self.compute_h_array()
@@ -29,26 +45,30 @@ class EntropyDistributions(object):
         return exit_array
 
     def compute_h_array(self):
-        p_i_array = []
-        h_array = []
+        if os.path.exists(self.path + "h_array"):
+            h_array = np.loadtxt(self.path + "h_array")
 
-        prime_success_exit = np.loadtxt(self.path + "successful_exit")
-        prime_success_exit = self.check_dimension(prime_success_exit)
+        else:
+            h_array = []
 
-        for entry in prime_success_exit:
-            t = int(entry[0])
-            traj = np.loadtxt(self.path + "hashed_traj_{0}".format(t))
-            exit = int(entry[1])
+            prime_success_exit = np.loadtxt(self.path + "successful_exit")
+            prime_success_exit = self.check_dimension(prime_success_exit)
 
-            p = traj[exit][1:] / np.sum(traj[exit][1:])
-            h_array.append(self.compute_entropy(p) - self.compute_entropy(self.p0))
-            p_i_array.append(p)
+            for entry in prime_success_exit:
+                t = int(entry[0])
+                traj = np.loadtxt(self.path + "hashed_traj_{0}".format(t))
+                exit = int(entry[1])
 
-        prime_unsuccessful = np.loadtxt(self.path + "unsuccessful_exit")
-        prime_unsuccessful = self.check_dimension(prime_unsuccessful)
+                p = traj[exit][1:] / np.sum(traj[exit][1:])
+                h_array.append(self.compute_entropy(p) - self.compute_entropy(self.p0))
 
-        for entry in prime_unsuccessful:
-            h_array.append(0.0 - self.compute_entropy(self.p0))
+            prime_unsuccessful = np.loadtxt(self.path + "unsuccessful_exit")
+            prime_unsuccessful = self.check_dimension(prime_unsuccessful)
+
+            for entry in prime_unsuccessful:
+                h_array.append(0.0 - self.compute_entropy(self.p0))
+
+            np.savetxt(self.path + "h_array", h_array, fmt='%f')
 
         return h_array
 
