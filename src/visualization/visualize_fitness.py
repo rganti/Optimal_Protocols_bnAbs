@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import matplotlib.pyplot as plt
 
 
 class Injection(object):
@@ -158,13 +158,15 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
     def plot_survival_fraction(self):
         survival_fraction = []
         for i in range(len(self.sigma_1_range)):
-            survival_fraction.append(np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(self.sigma_1_range[i], 2))))
+            survival_fraction.append(
+                np.loadtxt(self.path + "Sigma_{0}/survival_fraction".format(round(self.sigma_1_range[i], 2))))
 
         plt.plot(self.kl1_array, survival_fraction, marker='o')
 
-        plt.xlabel("$D(p_{0} || f_{1})$")
-        plt.ylabel("P(GC Survival)")
-        plt.title("Survival Fraction, Num_Bins = {0}".format(len(self.fitness_array[0])))
+        # plt.xlabel("$D(p_{0} || f_{1})$")
+        # plt.ylabel("P(GC Survival)")
+        # plt.title("Survival Fraction, Num_Bins = {0}".format(len(self.fitness_array[0])))
+        return survival_fraction
 
     def plot_survival_fraction_colored(self):
         # survival_fraction = []
@@ -189,7 +191,6 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
                                ', \\sigma_{1} = %.2f' % self.sigma_1_range[i] + ' $')
 
         # plt.legend(bbox_to_anchor=(1.05, 1.00))
-        plt.xlabel("$D(p_{1} || f_{2})$")
-        plt.ylabel("bnAb titers")
-        plt.title("Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
-
+        plt.xlabel("$D(p_{1} || f_{2})$", size=15)
+        plt.ylabel("bnAb titers", size=15)
+        # plt.title("Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
