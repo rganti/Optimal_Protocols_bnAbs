@@ -13,32 +13,32 @@ from src.data.procedures import ProcedureDelS1S2, define_n_initial
 
 
 class SlurmOptimalPairs(SlurmProtocolCurves):
-    def __init__(self, sigma_1, sigma_2):
-        SlurmProtocolCurves.__init__(self, sigma_1, simulation_time=20, nodes=1, ppn=1)
+    def __init__(self, sigma_1, sigma_2, file):
+        SlurmProtocolCurves.__init__(self, sigma_1, simulation_time=60, nodes=1, ppn=1)
         self.sigma_2 = sigma_2
-        self.script_name = "generate_data_optimal_pairs.py"
+        self.file = file
 
     def set_python_script(self, q):
-        q.write("python {0}/{1} --sigma1 {2} --sigma2 {3} \n".format(os.path.dirname(__file__),
-                                                                     self.script_name, self.sigma_1, self.sigma_2))
+        q.write("python {0} --sigma1 {1} --sigma2 {2} \n".format(self.file, self.sigma_1, self.sigma_2))
 
 
 class QsubOptimalPairs(QsubProtocolCurves):
-    def __init__(self, sigma_1, sigma_2):
+    def __init__(self, sigma_1, sigma_2, file):
         QsubProtocolCurves.__init__(self, sigma_1, simulation_time=20, nodes=1, ppn=1)
         self.sigma_2 = sigma_2
-        self.script_name = "generate_data_optimal_pairs.py"
+        self.file = file
 
     def set_python_script(self, q):
-        q.write("python {0}/{1} --sigma1 {2} --sigma2 {3} \n".format(os.path.dirname(__file__),
-                                                                     self.script_name, self.sigma_1, self.sigma_2))
+        q.write("python {0} --sigma1 {1} --sigma2 {2} \n".format(self.file, self.sigma_1,
+                                                                 self.sigma_2))
 
 
 class ProcedureDelS1S2OptimalPairs(ProcedureDelS1S2):
 
-    def __init__(self, parameters, trajectories=False):
-        ProcedureDelS1S2.__init__(self, parameters, trajectories=trajectories)
+    def __init__(self, parameters, trajectories=False, trees=False):
+        ProcedureDelS1S2.__init__(self, parameters, trajectories=trajectories, trees=trees)
         self.sigma = [parameters['sigma'], parameters['sigma2']]
+        self.num_reps = 20
 
     def post_process(self, bnab_next_injection):
         print("Starting post-processing...")
@@ -87,11 +87,11 @@ if __name__ == "__main__":
                 make_and_cd("Trial_{0}".format(t))
 
                 if socket.gethostname() == "eofe4.mit.edu" or socket.gethostname() == "eofe7.cm.cluster":
-                    sbatch = SlurmOptimalPairs(sigma_1=sigma_1, sigma_2=sigma_2)
+                    sbatch = SlurmOptimalPairs(sigma_1, sigma_2, os.path.realpath(__file__))
                     sbatch.generate_sbatch()
                     run_sbatch()
                 else:
-                    qsub = QsubOptimalPairs(sigma_1=sigma_1, sigma_2=sigma_2)
+                    qsub = QsubOptimalPairs(sigma_1, sigma_2, os.path.realpath(__file__))
                     qsub.generate_qsub()
                     run_qsub()
 
