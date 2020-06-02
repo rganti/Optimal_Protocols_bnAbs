@@ -4,6 +4,7 @@
 # external requirements
 numpy
 ete
+seaborn
 click
 Sphinx
 coverage
