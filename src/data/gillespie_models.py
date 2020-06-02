@@ -1,7 +1,9 @@
-from numpy.random import multinomial, random
-from numpy import zeros, log
-import numpy as np
 import pickle
+
+import numpy as np
+from numpy import zeros, log
+from numpy.random import multinomial, random
+
 from src.general.io_handling import write_results
 
 
@@ -385,8 +387,8 @@ class ModelTrajectories(Model):
 
 class ModelBoostTrajectories(ModelTrajectories):
 
-    def __init__(self, prime_sequences, p_ini, vnames, tmat, propensity):
-        ModelTrajectories.__init__(self, p_ini, vnames, tmat, propensity)
+    def __init__(self, prime_sequences, p_ini, vnames, tmat, propensity, n_exit=None):
+        ModelTrajectories.__init__(self, p_ini, vnames, tmat, propensity, n_exit=n_exit)
 
         # Sequences generated from priming
         self.prime_sequences = prime_sequences
@@ -449,7 +451,7 @@ class ModelBoostTrajectories(ModelTrajectories):
 
         boost_sequence_array = np.copy(self.prime_sequences[-1])
 
-        death_entry = np.zeros(8, dtype=int)
+        death_entry = np.zeros(self.nvars, dtype=int)
         death_entry[0] = 1
         for i in remaining_indices:
             boost_sequence_array[int(i)][1:] = death_entry
