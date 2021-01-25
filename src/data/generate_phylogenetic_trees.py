@@ -5,7 +5,7 @@ import socket
 import numpy as np
 
 from src.data.generate_data_optimal_pairs import ProcedureDelS1S2OptimalPairs, SlurmOptimalPairs, QsubOptimalPairs
-from src.data.procedures import define_n_initial
+from src.data.gillespie_models import define_n_initial
 from src.general.directory_handling import make_and_cd
 from src.general.queuing import run_sbatch, run_qsub
 
