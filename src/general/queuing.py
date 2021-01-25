@@ -53,5 +53,5 @@ class SlurmHeader(object):
         q.write("#SBATCH --nodes {0}\n".format(self.nodes))
         q.write("#SBATCH --ntasks-per-node {0}\n".format(self.ppn))
         q.write("#SBATCH --time={0}\n".format(datetime.timedelta(minutes=self.simulation_time)))
-        q.write("#SBATCH --partition=sched_mit_arupc\n")
+        q.write("#SBATCH --partition=sched_mit_arupc_long\n")
         q.write("#SBATCH --mem-per-cpu=10gb\n\n")
