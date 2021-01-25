@@ -1,6 +1,10 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+
+from src.general.io_handling import pickle_in_data
 
 
 class Injection(object):
@@ -61,7 +65,7 @@ class InjectionKlDistance(Injection):
 
 class ProcessProtocolData(object):
 
-    def __init__(self, path, num_gcs=100.0):
+    def __init__(self, path, num_gcs=100):
 
         self.sigma_1_range = np.loadtxt(path + "sigma_1_range")  # np.sort(np.logspace(1.0, -1.0, num=15))[::-1]
         self.fitness_array = []
@@ -114,6 +118,57 @@ class ProcessProtocolData(object):
         plt.xlabel("$D(p_{1} || f_{2})$")
         plt.ylabel("Number of bnAbs/GC")
         plt.title("Prime and Boost Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
+
+
+class ExtendedBreadthProcessProtocolData(ProcessProtocolData):
+    def __init__(self, path, sigma, num_gcs=100):
+        ProcessProtocolData.__init__(self, path, num_gcs=num_gcs)
+        self.path = path
+        self.sigma = sigma
+        self.sigma_path = path + "Sigma_{0}/".format(self.sigma)
+        self.kl2_array = self.load_arrays()
+        self.survival_fraction = float(len(np.loadtxt(self.sigma_path + "/successful_exit"))) / self.num_gcs
+
+        if os.path.exists(self.sigma_path + "p0"):
+            self.p0 = np.loadtxt(self.sigma_path + "p0")
+        else:
+            self.compute_p0()
+            self.p0 = np.loadtxt(self.sigma_path + "p0")
+
+        self.kl1 = InjectionKlDistance(self.p0, sigma=self.sigma, num_odes=len(self.p0) + 1)
+        self.b_cells = pickle_in_data(self.sigma_path + "total_b_cells")
+
+    def compute_p0(self):
+        n0 = []
+        for i in range(100):
+            print("Loading trajectory {0}".format(i))
+            traj = np.loadtxt(self.sigma_path + "/hashed_traj_{0}".format(i))
+            n0.append(traj[0][1:])
+
+        n_ave = np.mean(n0, axis=0)
+        p0 = n_ave / np.sum(n_ave)
+
+        np.savetxt(self.sigma_path + "/p0", p0)
+
+    def load_arrays(self):
+        kl2_array = []
+        sigma2_range = np.loadtxt(self.sigma_path + "sigma2_range")
+        n_ave = np.loadtxt(self.sigma_path + "n_ave")
+        p1 = n_ave / np.sum(n_ave)
+
+        for sigma2 in sigma2_range:
+            kl2 = InjectionKlDistance(p1, sigma=sigma2, num_odes=len(p1) + 1)
+            kl2_array.append(kl2.compute_kl_distance())
+
+        return kl2_array
+
+    def plot(self, i):
+        plt.plot(self.kl2_array, np.array(self.b_cells[i]) / self.num_gcs, marker='o',
+                 label='$D(p^{0} || f^{1}) = ' + '%.2f' % self.kl1.compute_kl_distance() + ' $')  # + ', \\sigma_{1} = %.2f' % self.sigma + ' $')
+
+        plt.legend()
+        # plt.xlabel("$D(p^{1} || f^{2})$")
+        # plt.ylabel("Number of bnAbs/GC")
 
 
 class EnsembleProcessProtocolData(ProcessProtocolData):
@@ -186,11 +241,12 @@ class EnsembleProcessProtocolData(ProcessProtocolData):
         if set_sns:
             sns.set_palette(sns.color_palette("hls", len(self.kl1_array)))
         for i in range(len(self.kl1_array)):
-            plt.errorbar(self.kl2_matrix[i], self.mean_bnab_array[i], yerr=self.error_bnab_array[i], marker='o',
-                         label='$D(p_{0} || f_{1}) = ' + '%.2f' % self.kl1_array[i] +
-                               ', \\sigma_{1} = %.2f' % self.sigma_1_range[i] + ' $')
+            plt.errorbar(self.kl2_matrix[i], self.mean_bnab_array[i] / self.num_gcs,
+                         yerr=self.error_bnab_array[i] / self.num_gcs, marker='o',
+                         label='$D(p^{0} || f^{1}) = ' + '%.2f' % self.kl1_array[i] + '$')
+            # ', \\sigma_{1} = %.2f' % self.sigma_1_range[i] + ' $')
 
         # plt.legend(bbox_to_anchor=(1.05, 1.00))
-        plt.xlabel("$D(p_{1} || f_{2})$", size=15)
-        plt.ylabel("bnAb titers", size=15)
+        plt.xlabel("$D(p^{1} || f^{2})$", size=15)
+        plt.ylabel("bnAb titers/GC", size=15)
         # plt.title("Protocols, Num_Bins = {0}".format(len(self.fitness_array[0])))
