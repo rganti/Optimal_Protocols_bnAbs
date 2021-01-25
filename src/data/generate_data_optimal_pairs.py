@@ -3,13 +3,14 @@ import os
 import socket
 
 import numpy as np
+
 from src.data.generate_protocol_curves import SlurmProtocolCurves, QsubProtocolCurves
+from src.data.gillespie_models import define_n_initial
+from src.data.procedures import ProcedureDelS1S2
 from src.data_process.simulation_post_process import GillespieGCExit
 from src.data_process.trajectories_post_process import ComputeTrajectorySuccessProbability
 from src.general.directory_handling import make_and_cd
 from src.general.queuing import run_sbatch, run_qsub
-
-from src.data.procedures import ProcedureDelS1S2, define_n_initial
 
 
 class SlurmOptimalPairs(SlurmProtocolCurves):
