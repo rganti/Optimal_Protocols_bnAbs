@@ -33,7 +33,8 @@ def my_layout(node):
 
 
 def my_layout_extended(node):
-    N = TextFace(node.numbers, tight_text=True)
+    N = TextFace(int(node.numbers), fsize=1)  # , tight_text=True)
+    # N = AttrFace(node.numbers, fsize=1, tight_text=True)
     add_face_to_node(N, node, column=1, position="branch-right")
 
     style = NodeStyle()
@@ -75,8 +76,8 @@ def my_layout_extended(node):
 
 def set_tree_style_extended():
     ts = TreeStyle()
-    for i in range(16):
-        ts.legend.add_face(CircleFace(10, color_dictionary["N{0}".format(i)]), column=0)
+    # for i in range(16):
+    #     ts.legend.add_face(CircleFace(10, color_dictionary["N{0}".format(i)]), column=0)
 
     ts.show_leaf_name = False
     ts.show_branch_length = False
