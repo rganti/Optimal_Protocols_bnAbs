@@ -7,6 +7,27 @@ from numpy.random import multinomial, random
 from src.general.io_handling import write_results
 
 
+def define_n_initial(num_bins, length=1000):
+    n_initial = np.zeros(num_bins, dtype=float)
+
+    n_b_cells = 25
+    index = (num_bins + 1) / 2
+
+    mu, sigma = 3., 1.
+
+    s = np.random.lognormal(mu, sigma, n_b_cells)
+    count, bins = np.histogram(s, bins=range(0, length, length / index))
+
+    n_initial[:len(count)] = count
+
+    s = np.random.lognormal(mu, sigma, n_b_cells)
+    count, bins = np.histogram(s, bins=range(0, length, length / index))
+
+    n_initial[-len(count):] = count[::-1]
+
+    return n_initial
+
+
 class Model(object):
     def __init__(self, p_ini, vnames, tmat, propensity, n_stop=200):
         '''
@@ -34,8 +55,9 @@ class Model(object):
         return self.time, self.series, self.steps
 
     def sample_initial_population(self):
-        events = multinomial(self.ntot, self.p_ini)
-        new_initial = np.insert(events, 0, 0)
+        initial = define_n_initial(len(self.p_ini))
+        # events = multinomial(self.ntot, self.p_ini)
+        new_initial = np.insert(initial, 0, 0)
         ini = [i for i in new_initial]
 
         return ini
@@ -45,12 +67,19 @@ class Model(object):
         tvec = range(1, tmax)
 
         if method == 'SSA':
+            n0 = []
             for i in range(reps):
-                # self.time_array = []
                 res = zeros((tmax, self.nvars), dtype=float)
-                steps = self.GSSA(res, tmax=tmax, reps=i)
+                steps, tim = self.GSSA(res, tmax=tmax, reps=i)
                 write_results(res, i)
-                # np.savetxt("time_array_{0}".format(i), self.time_array, fmt='%f')
+                n0.append(res[0, 1:])
+
+            n_ave = np.mean(n0, axis=0)
+            p0 = n_ave / np.sum(n_ave)
+
+            np.savetxt("p0", p0)
+
+            # np.savetxt("time_array_{0}".format(i), self.time_array, fmt='%f')
         elif method == 'SSAct':
             pass
         self.time = tvec
@@ -107,7 +136,7 @@ class Model(object):
 
         # print(str(res))
 
-        return steps
+        return steps, tim
 
 
 class ModelIndividualGC(Model):
@@ -121,10 +150,10 @@ class ModelIndividualGC(Model):
         ini = np.zeros(len(self.n_exit), dtype=int)
 
         for i in range(self.ntot):
-            print("n_i = " + str(self.n_exit))
+            # print("n_i = " + str(self.n_exit))
             p_ini = self.n_exit / np.sum(self.n_exit)
 
-            print("p_ini = " + str(p_ini))
+            # print("p_ini = " + str(p_ini))
             events = multinomial(1, p_ini)
 
             bin_index = events.nonzero()[0][0]
