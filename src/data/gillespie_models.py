@@ -72,6 +72,8 @@ class Model(object):
                 res = zeros((tmax, self.nvars), dtype=float)
                 steps, tim = self.GSSA(res, tmax=tmax, reps=i)
                 write_results(res, i)
+                # Code below writes only the results at time points just before and after exit condition
+                # write_results(res[tim-2:tim+2], i)
                 n0.append(res[0, 1:])
 
             n_ave = np.mean(n0, axis=0)
