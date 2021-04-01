@@ -35,7 +35,10 @@ class PostProcess(object):
 class BnabGcExit(object):
 
     def __init__(self, n_exit=200, num_odes=8, num_files=100):
-        self.num_files = len([name for name in os.listdir(".") if "traj" in name])
+        if num_files:
+            self.num_files = num_files
+        else:
+            self.num_files = len([name for name in os.listdir(".") if "traj" in name])
 
         self.num_odes = num_odes
         self.n_exit = n_exit
@@ -56,6 +59,7 @@ class BnabGcExit(object):
         no_exit = []
 
         for i in range(self.start_index, self.num_files):
+            print("trajectory: " + str(i))
             traj = np.loadtxt("hashed_traj_{0}".format(i))
             ntot = np.sum(traj[:, index:], axis=1)
             survival_condition = np.where(ntot >= self.n_exit)[0]
@@ -100,9 +104,12 @@ class BnabGcExit(object):
 
 class GillespieGCExit(BnabGcExit):
 
-    def __init__(self, n_exit=200, num_odes=8, num_files=100):
+    def __init__(self, n_exit=200, num_odes=8, num_files=None):
         BnabGcExit.__init__(self, n_exit=n_exit, num_odes=num_odes, num_files=num_files)
-        self.num_files = len([name for name in os.listdir(".") if "hashed_traj" in name])
+        if num_files:
+            self.num_files = num_files
+        else:
+            len([name for name in os.listdir(".") if "hashed_traj" in name])
         self.start_index = 0
 
 
