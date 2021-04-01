@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 
+from src.data_process.compute_kld_time import compute_kl_distance
 from src.visualization.visualize_fitness import InjectionKlDistance
 
 
@@ -24,8 +25,38 @@ class EntropyDistributions(object):
         self.path = path
         self.p0 = np.loadtxt(self.path + "event_prob")
         self.sigma = np.loadtxt(self.path + "sigma")
-        self.h_array = self.compute_h_array()
+        # self.h_array = self.compute_h_array()
         self.kl_distance = InjectionKlDistance(self.p0, self.sigma, num_odes=16)
+        self.fitness = np.loadtxt(self.path + "fitness")
+        self.kld_array = self.compute_kld_array()
+
+    def compute_kld_array(self):
+        kld_array = []
+        success_exit = np.loadtxt(self.path + "successful_exit")
+        for i in range(len(success_exit)):
+            traj_index, exit_index = np.array(success_exit[i], int)
+            traj = np.loadtxt(self.path + "hashed_traj_{0}".format(traj_index))
+            p0 = traj[0][1:] / np.sum(traj[0][1:])
+            kld_0 = compute_kl_distance(p0, self.fitness)
+
+            p_final = traj[exit_index][1:] / np.sum(traj[exit_index][1:])
+            kld_final = compute_kl_distance(p_final, self.fitness)
+
+            kld_array.append(kld_final - kld_0)
+
+        unsuccess_exit = np.loadtxt(self.path + "unsuccessful_exit")
+        for j in range(len(unsuccess_exit)):
+            traj_index, exit_index = np.array(unsuccess_exit[j], int)
+            traj = np.loadtxt(self.path + "hashed_traj_{0}".format(traj_index))
+            p0 = traj[0][1:] / np.sum(traj[0][1:])
+            kld_0 = compute_kl_distance(p0, self.fitness)
+
+            p_final = traj[exit_index - 1][1:] / np.sum(traj[exit_index - 1][1:])
+            kld_final = compute_kl_distance(p_final, self.fitness)
+
+            kld_array.append(kld_final - kld_0)
+
+        return kld_array
 
     def compute_entropy(self, p):
         h = []
