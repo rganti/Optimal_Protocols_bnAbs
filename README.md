@@ -10,8 +10,28 @@ To install packages, run from head directory (Optimal_Protocols_bnAbs/):
 
 python setup.py develop  
 
-Please look at Simulations class in procedures.py to see how simulations are setup. Also refer to gillespie_models.py 
+Please look at Simulations class in procedures.py to see how simulations are set up. Also refer to gillespie_models.py 
 to see setup of gillespie simulations.
+
+Data
+----
+All processed data is located in either of the following directories on engaging:
+/nfs/arupclab001/rganti/Optimal_Protocol_bnAbs_arupc_lab001/
+/pool001/rganti/Optimal_Protocols_bnabs_pool002/
+
+Code used to generate figures shown in the main text and appendix is
+located in the following jupyter notebooks on engaging which are currently not pushed to github:
+/home/rganti/Optimal_Protocols_bnAbs/notebooks/reports/0.2-rganti-manuscript-plots.ipynb
+/home/rganti/Optimal_Protocols_bnAbs/notebooks/reports/bnAb_paper_KLD.ipynb
+
+Note jupyter notebooks are located on engaging in:
+/home/rganti/Optimal_Protocols_bnAbs/notebooks/exploratory/
+/home/rganti/Optimal_Protocols_bnAbs/notebooks/reports/
+
+where exploratory/ contains (scratch) exploratory jupyter notebooks and reports/ contains the notebooks
+used to generate the manuscript plots.
+
+Questions? Email me at rganti(at)mit.edu
 
 Project Organization
 ------------
