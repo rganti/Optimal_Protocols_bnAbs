@@ -4,12 +4,13 @@ the protocol curves showing bnabs/gc produced versus KL distance of p1 and f2.''
 import argparse
 import os
 import socket
-import time
 
 import numpy as np
 
-from src.data.procedures import ProcedureDelS1S2, define_n_initial
+from src.data.gillespie_models import define_n_initial
+from src.data.procedures import ProcedureDelS1S2
 from src.general.directory_handling import make_and_cd
+from src.general.io_handling import pickle_out_data, pickle_in_data
 from src.general.queuing import QsubHeader, SlurmHeader, run_sbatch, run_qsub
 
 
@@ -31,7 +32,7 @@ class QsubProtocolCurves(object):
 
 
 class SlurmProtocolCurves(object):
-    def __init__(self, sigma_1, simulation_time=30, nodes=1, ppn=1):
+    def __init__(self, sigma_1, simulation_time=660, nodes=1, ppn=1):
         self.sigma_1 = sigma_1
         self.header = SlurmHeader(simulation_name="optimal_curves", simulation_time=simulation_time, nodes=nodes,
                                   ppn=ppn)
@@ -56,31 +57,40 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    parameters = {'n_initial': define_n_initial(15), 'sigma': args.sigma1, 'death_rate': 0.02,
-                  'fraction': 7.0 / 8.0, 'mutation_rate': 0.05, 'n_stop': 200}
+    # parameters = {'n_initial': define_n_initial(31), 'death_rate': 0.01,
+    #               'fraction': 0.7, 'mutation_rate': 0.05, 'n_stop': 200}
+
+    parameters = {'n_initial': define_n_initial(15), 'death_rate': 0.02,
+                  'fraction': 7.0 / 8.0, 'mutation_rate': 0.05, 'n_stop': 500000}
 
     if args.sigma1:
+        parameters = pickle_in_data("parameters")
+        parameters['sigma'] = args.sigma1
         protocol = ProcedureDelS1S2(parameters)
         # protocol.run_sequential()
         protocol.run_prime()
     else:
-        make_and_cd("Trials_dr_{0}_muij_{1}_bins_{2}".format(parameters['death_rate'], parameters['mutation_rate'],
-                                                             len(parameters['n_initial'])))
-
+        # make_and_cd("Trials_dr_{0}_muij_{1}_bins_{2}".format(parameters['death_rate'], parameters['mutation_rate'],
+        #                                                      len(parameters['n_initial'])))
+        make_and_cd("steady_state_{0}".format(parameters['n_stop']))
         home = os.getcwd()
 
         # sigma_1_range = np.logspace(1.0, -1.0, num=15)
         # # sigma_1_range = np.logspace(0.6, 0.0, num=20)
-        sigma_1_range = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+
+        # sigma_1_range = [1.0, 1.2, 1.25, 1.3, 1.35, 1.4]
+        # sigma_1_range = [1.05, 1.10, 1.15]
+        sigma_1_range = [0.8]
         np.savetxt("sigma_1_range", sigma_1_range[::-1], fmt='%f')
 
         for sigma1 in sigma_1_range:
             make_and_cd("Sigma_{0}".format(round(sigma1, 2)))
-
             sigma_directory = os.getcwd()
 
-            for t in range(30):
+            for t in range(1):
                 make_and_cd("Trial_{0}".format(t))
+
+                pickle_out_data(parameters, "parameters")
 
                 if socket.gethostname() == "eofe4.mit.edu" or socket.gethostname() == "eofe7.cm.cluster":
                     sbatch = SlurmProtocolCurves(sigma_1=sigma1)
